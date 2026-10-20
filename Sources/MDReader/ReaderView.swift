@@ -4,7 +4,8 @@ struct ReaderView: View {
     let document: MarkdownDocument
     @State private var model: ReaderModel
 
-    @AppStorage(PrefKey.theme) private var theme: ReaderTheme = .auto
+    @AppStorage(PrefKey.theme) private var themeID = ThemeLibrary.defaultID
+    private var theme: ThemeDescriptor { ThemeLibrary.shared.resolve(themeID) }
     @AppStorage(PrefKey.typeface) private var typeface: ReaderTypeface = .sans
     @AppStorage(PrefKey.fontSize) private var fontSize: Double = FontSize.default
     @AppStorage(PrefKey.width) private var width: ReaderWidth = .medium
@@ -42,6 +43,7 @@ struct ReaderView: View {
         .toolbar { toolbarContent }
         .preferredColorScheme(theme.colorScheme)
         .focusedSceneValue(\.reader, model)
+        .background(TabbedWindow())
         .onAppear {
             columns = showTOC ? .all : .detailOnly
             model.startWatching()
@@ -58,14 +60,7 @@ struct ReaderView: View {
     }
 
     /// Matches the page so window resizes never flash a different color.
-    private var pageBackground: Color {
-        switch theme {
-        case .sepia: Color(red: 0.973, green: 0.945, blue: 0.890)
-        case .light: .white
-        case .dark: Color(red: 0.11, green: 0.11, blue: 0.118)
-        case .auto: Color(nsColor: .textBackgroundColor)
-        }
-    }
+    private var pageBackground: Color { Color(nsColor: theme.background) }
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
@@ -86,10 +81,8 @@ struct ReaderView: View {
 
         ToolbarItem(placement: .primaryAction) {
             Menu {
-                Picker("Theme", selection: $theme) {
-                    ForEach(ReaderTheme.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) }
-                }
-                .pickerStyle(.inline)
+                ThemeMenuItems(themeID: $themeID)
+                Divider()
                 Picker("Typeface", selection: $typeface) {
                     ForEach(ReaderTypeface.allCases) { Text($0.title).tag($0) }
                 }

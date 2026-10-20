@@ -3,7 +3,8 @@ import UniformTypeIdentifiers
 
 @main
 struct MDReaderApp: App {
-    @AppStorage(PrefKey.theme) private var theme: ReaderTheme = .auto
+    @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    @AppStorage(PrefKey.theme) private var themeID = ThemeLibrary.defaultID
     @AppStorage(PrefKey.fontSize) private var fontSize: Double = FontSize.default
     @FocusedValue(\.reader) private var reader
 
@@ -21,6 +22,11 @@ struct MDReaderApp: App {
                 Button("Print…") { reader?.print() }
                     .keyboardShortcut("p")
                     .disabled(reader == nil)
+            }
+
+            CommandGroup(after: .newItem) {
+                Button("Open in New Tab…") { NSDocumentController.shared.openDocument(nil) }
+                    .keyboardShortcut("t")
             }
 
             CommandGroup(after: .textEditing) {
@@ -43,9 +49,7 @@ struct MDReaderApp: App {
                 Button("Zoom Out") { fontSize = max(FontSize.range.lowerBound, fontSize - 1) }
                     .keyboardShortcut("-")
                 Divider()
-                Picker("Theme", selection: $theme) {
-                    ForEach(ReaderTheme.allCases) { Text($0.title).tag($0) }
-                }
+                Menu("Theme") { ThemeMenuItems(themeID: $themeID) }
                 Divider()
             }
 
@@ -70,6 +74,16 @@ struct MDReaderApp: App {
                 alert.informativeText = error.localizedDescription
             }
             alert.runModal()
+        }
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        NSWindow.allowsAutomaticWindowTabbing = true
+        // Theme ids used to be bare names ("dark"); they now carry a source prefix.
+        if let old = UserDefaults.standard.string(forKey: PrefKey.theme), !old.contains(".") {
+            UserDefaults.standard.set("reader." + old, forKey: PrefKey.theme)
         }
     }
 }

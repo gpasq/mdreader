@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Builds MDReader.app into ./build.
 #   ./build.sh            release build
-#   ./build.sh install    also copy to /Applications and register with Launch Services
+#   ./build.sh install    also copy to /Applications and make it the default for Markdown files
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -44,6 +44,8 @@ if [[ ${1:-} == install ]]; then
   cp -R $APP /Applications/
   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/MDReader.app
   echo "Installed /Applications/MDReader.app"
+  echo "› Setting MDReader as the default app for Markdown"
+  swift scripts/set-default.swift /Applications/MDReader.app
 fi
 
 echo "✓ $APP"

@@ -1,36 +1,5 @@
 import SwiftUI
 
-enum ReaderTheme: String, CaseIterable, Identifiable {
-    case auto, light, sepia, dark
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .auto: "Match System"
-        case .light: "Light"
-        case .sepia: "Sepia"
-        case .dark: "Dark"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .auto: "circle.lefthalf.filled"
-        case .light: "sun.max"
-        case .sepia: "book"
-        case .dark: "moon"
-        }
-    }
-
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .auto: nil
-        case .light, .sepia: .light
-        case .dark: .dark
-        }
-    }
-}
-
 enum ReaderTypeface: String, CaseIterable, Identifiable {
     case sans, serif
     var id: String { rawValue }
@@ -65,12 +34,12 @@ enum FontSize {
 
 /// Everything the web view needs to style a page.
 struct ReaderPrefs: Equatable {
-    var theme: ReaderTheme
+    var theme: ThemeDescriptor
     var typeface: ReaderTypeface
     var fontSize: Double
     var width: ReaderWidth
 
     var jsArguments: [String: Any] {
-        ["theme": theme.rawValue, "typeface": typeface.rawValue, "fontSize": fontSize, "measure": width.rem]
+        theme.jsArguments.merging(["typeface": typeface.rawValue, "fontSize": fontSize, "measure": width.rem]) { a, _ in a }
     }
 }

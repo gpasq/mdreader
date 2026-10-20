@@ -184,6 +184,8 @@
 
   // ---------- public API (called from Swift) ----------
 
+  let appliedVars = [];
+
   window.mdr = {
     render(markdown, baseHref, keepScroll) {
       const prevRatio = keepScroll ? scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) : 0;
@@ -234,6 +236,13 @@
     setPrefs(p) {
       const root = document.documentElement;
       if (p.theme) root.dataset.theme = p.theme;
+      // Palette themes set their base colors inline; clear them for the reader's own themes.
+      for (const name of appliedVars) root.style.removeProperty(name);
+      appliedVars = [];
+      if (p.vars) {
+        for (const [name, value] of Object.entries(p.vars)) { root.style.setProperty(name, value); appliedVars.push(name); }
+      }
+      root.toggleAttribute("data-dark", !!p.dark);
       if (p.typeface) root.dataset.typeface = p.typeface;
       if (p.fontSize) root.style.setProperty("--font-size", p.fontSize + "px");
       if (p.measure) root.style.setProperty("--measure", p.measure + "rem");
