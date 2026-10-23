@@ -6,6 +6,8 @@ struct MDReaderApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
     @AppStorage(PrefKey.theme) private var themeID = ThemeLibrary.defaultID
     @AppStorage(PrefKey.fontSize) private var fontSize: Double = FontSize.default
+    @AppStorage(PrefKey.typeface) private var typeface: ReaderTypeface = .sans
+    @AppStorage(PrefKey.width) private var width: ReaderWidth = .medium
     @FocusedValue(\.reader) private var reader
 
     var body: some Scene {
@@ -19,6 +21,9 @@ struct MDReaderApp: App {
             }
 
             CommandGroup(replacing: .printItem) {
+                Button("Export as PDF…") { reader?.exportPDF() }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
+                    .disabled(reader == nil)
                 Button("Print…") { reader?.print() }
                     .keyboardShortcut("p")
                     .disabled(reader == nil)
@@ -50,6 +55,12 @@ struct MDReaderApp: App {
                     .keyboardShortcut("-")
                 Divider()
                 Menu("Theme") { ThemeMenuItems(themeID: $themeID) }
+                Picker("Typeface", selection: $typeface) {
+                    ForEach(ReaderTypeface.allCases) { Text($0.title).tag($0) }
+                }
+                Picker("Page Width", selection: $width) {
+                    ForEach(ReaderWidth.allCases) { Text($0.title).tag($0) }
+                }
                 Divider()
             }
 

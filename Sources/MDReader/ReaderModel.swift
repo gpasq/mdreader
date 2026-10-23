@@ -71,14 +71,44 @@ final class ReaderModel {
     }
 
     func print() {
+        runPrintOperation(with: makePrintInfo())
+    }
+
+    /// Asks where to save, then prints the page straight to a paginated PDF.
+    func exportPDF() {
         guard let webView, let window = webView.window else { return }
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.pdf]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = (fileURL?.deletingPathExtension().lastPathComponent ?? "Untitled") + ".pdf"
+        if let dir = fileURL?.deletingLastPathComponent() { panel.directoryURL = dir }
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard response == .OK, let url = panel.url, let self else { return }
+            let info = self.makePrintInfo()
+            info.jobDisposition = .save
+            info.dictionary()[NSPrintInfo.AttributeKey.jobSavingURL] = url
+            // Let the save sheet finish closing before the print sheet machinery runs.
+            DispatchQueue.main.async {
+                self.runPrintOperation(with: info, showPanels: false)
+            }
+        }
+    }
+
+    private func makePrintInfo() -> NSPrintInfo {
         let info = NSPrintInfo.shared.copy() as! NSPrintInfo
         info.horizontalPagination = .fit
         info.verticalPagination = .automatic
         info.topMargin = 48; info.bottomMargin = 48
         info.leftMargin = 54; info.rightMargin = 54
+        return info
+    }
+
+    private func runPrintOperation(with info: NSPrintInfo, showPanels: Bool = true) {
+        guard let webView, let window = webView.window else { return }
         let op = webView.printOperation(with: info)
         op.view?.frame = webView.bounds
+        op.showsPrintPanel = showPanels
+        op.showsProgressPanel = showPanels
         op.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
     }
 

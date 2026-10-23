@@ -104,6 +104,7 @@ struct ReaderView: View {
                 Button("Open in Editor", systemImage: "square.and.pencil") { model.openInDefaultEditor() }
                 Button("Show in Finder", systemImage: "folder") { model.revealInFinder() }
                 Divider()
+                Button("Export as PDF…", systemImage: "arrow.down.document") { model.exportPDF() }
                 Button("Print…", systemImage: "printer") { model.print() }
             } label: {
                 Label("More", systemImage: "ellipsis.circle")

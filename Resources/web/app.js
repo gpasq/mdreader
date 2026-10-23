@@ -245,7 +245,7 @@
       root.toggleAttribute("data-dark", !!p.dark);
       if (p.typeface) root.dataset.typeface = p.typeface;
       if (p.fontSize) root.style.setProperty("--font-size", p.fontSize + "px");
-      if (p.measure) root.style.setProperty("--measure", p.measure + "rem");
+      if (p.measure) root.style.setProperty("--measure", p.measure);
       onScroll();
     },
 

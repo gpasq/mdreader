@@ -7,14 +7,16 @@ enum ReaderTypeface: String, CaseIterable, Identifiable {
 }
 
 enum ReaderWidth: String, CaseIterable, Identifiable {
-    case narrow, medium, wide
+    case narrow, medium, wide, full
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
-    var rem: Double {
+    var title: String { self == .full ? "Fit Window" : rawValue.capitalized }
+    /// CSS max-width for the page; `full` lets the text grow with the window.
+    var measure: String {
         switch self {
-        case .narrow: 38
-        case .medium: 46
-        case .wide: 62
+        case .narrow: "38rem"
+        case .medium: "46rem"
+        case .wide: "62rem"
+        case .full: "none"
         }
     }
 }
@@ -40,6 +42,6 @@ struct ReaderPrefs: Equatable {
     var width: ReaderWidth
 
     var jsArguments: [String: Any] {
-        theme.jsArguments.merging(["typeface": typeface.rawValue, "fontSize": fontSize, "measure": width.rem]) { a, _ in a }
+        theme.jsArguments.merging(["typeface": typeface.rawValue, "fontSize": fontSize, "measure": width.measure]) { a, _ in a }
     }
 }
