@@ -16,6 +16,7 @@ A quiet, native macOS reader for **Markdown** files. Open any `.md` file and it 
 - Outline sidebar that follows your scroll position
 - **Live reload** — edit the file in any editor and the page updates in place, keeping your spot
 - Syntax highlighting for 190+ languages, with a one-click *Copy* button
+- **Mermaid diagrams** — ```` ```mermaid ```` blocks are drawn as flowcharts, sequence diagrams and more, in the current theme
 - Themes: Match System, Light, Sepia, Dark, plus VS Code themes — Dark+, Light+, Monokai, Dracula, One Dark Pro, GitHub Light/Dark, Solarized Light/Dark, Nord — and **Import VS Code Theme…** for any theme `.json`
 - San Francisco or New York type; three page widths or fit-to-window
 - Find in document (<kbd>⌘</kbd> <kbd>F</kbd>), print (<kbd>⌘</kbd> <kbd>P</kbd>), export as PDF (<kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>E</kbd>), text size (<kbd>⌘</kbd> <kbd>+</kbd> / <kbd>⌘</kbd> <kbd>−</kbd>)

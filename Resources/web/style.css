@@ -297,11 +297,24 @@ body { margin: 0; background: var(--bg); }
 /* Find highlight */
 .markdown .footnotes { font-size: .88em; color: var(--muted); border-top: 1px solid var(--rule); margin-top: 3em; padding-top: 1em; }
 
+/* Mermaid diagrams */
+.markdown .diagram {
+  margin: 0 0 1.15em; padding: 1.4em 1.2em; text-align: center; overflow-x: auto;
+  border: 1px solid var(--code-border); border-radius: 12px;
+}
+.markdown .diagram svg { max-width: none; }
+.markdown .diagram:not(.done) { min-height: 8em; display: grid; place-items: center; }
+.markdown .diagram:not(.done)::before { content: "Rendering diagram…"; color: var(--muted); font-size: .9em; }
+.markdown .diagram.error { text-align: left; }
+.markdown .diagram-error { color: var(--caution); font-size: .9em; margin: 0 0 .8em; }
+.markdown .diagram.error pre { margin: 0; font: .85em/1.55 var(--mono-font); white-space: pre-wrap; color: var(--fg-soft); }
+
 .empty { text-align: center; color: var(--muted); margin-top: 30vh; font-family: var(--display-font); }
 
 @media print {
   #progress { display: none; }
   #page { padding: 0; max-width: none; }
   .markdown .copy { display: none; }
-  .markdown .code-block, .markdown pre, .markdown img, .markdown table { break-inside: avoid; }
+  .markdown .diagram svg { max-width: 100%; height: auto; }
+  .markdown .code-block, .markdown pre, .markdown img, .markdown table, .markdown .diagram { break-inside: avoid; }
 }

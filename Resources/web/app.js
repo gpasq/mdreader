@@ -73,6 +73,14 @@
       toc.push({ id: h.id, level: Number(h.tagName[1]), title: text });
     });
 
+    // Mermaid blocks become diagram placeholders, drawn after the page is in the DOM.
+    root.querySelectorAll("pre > code.language-mermaid").forEach(code => {
+      const fig = document.createElement("figure");
+      fig.className = "diagram";
+      fig.dataset.source = code.textContent;
+      code.parentElement.replaceWith(fig);
+    });
+
     // Code blocks: highlight, language label, copy button.
     root.querySelectorAll("pre > code").forEach(code => {
       const pre = code.parentElement;
@@ -140,6 +148,109 @@
 
     return toc;
   }
+
+  // ---------- diagrams ----------
+
+  let mermaidLoaded = null;
+  const diagramCache = new Map(); // theme + source → svg, so live reloads don't jump
+  let diagramSeq = 0;
+
+  function loadMermaid() {
+    if (!mermaidLoaded) mermaidLoaded = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = new URL("mermaid.min.js", shellURL).href; // <base> points at the document's folder
+      s.onload = () => resolve(window.mermaid);
+      s.onerror = () => { mermaidLoaded = null; reject(new Error("Couldn't load the diagram renderer.")); };
+      document.head.append(s);
+    });
+    return mermaidLoaded;
+  }
+
+  // Mermaid derives shades from its theme colors, so it needs plain hex — not var() or color-mix().
+  const probe = document.createElement("span");
+  const paint = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+
+  function hex(cssVar, over) {
+    probe.style.color = `var(${cssVar})`;
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    paint.clearRect(0, 0, 1, 1);
+    if (over) { paint.fillStyle = over; paint.fillRect(0, 0, 1, 1); }
+    paint.fillStyle = color; paint.fillRect(0, 0, 1, 1);
+    const [r, g, b] = paint.getImageData(0, 0, 1, 1).data;
+    return "#" + [r, g, b].map(n => n.toString(16).padStart(2, "0")).join("");
+  }
+
+  function diagramTheme() {
+    const bg = hex("--bg");
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(bg.slice(i, i + 2), 16));
+    const fg = hex("--fg"), accent = hex("--accent"), rule = hex("--rule");
+    const node = hex("--accent-soft", bg), panel = hex("--code-bg", bg);
+    return {
+      darkMode: (r * 299 + g * 587 + b * 114) / 1000 < 128,
+      background: bg, fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--body-font"),
+      fontSize: "15px",
+      primaryColor: node, primaryBorderColor: accent, primaryTextColor: fg,
+      secondaryColor: panel, secondaryBorderColor: rule, secondaryTextColor: fg,
+      tertiaryColor: panel, tertiaryBorderColor: rule, tertiaryTextColor: fg,
+      mainBkg: node, nodeBorder: accent, textColor: fg, titleColor: fg,
+      lineColor: hex("--muted"), edgeLabelBackground: bg,
+      clusterBkg: panel, clusterBorder: rule, noteBkgColor: panel, noteBorderColor: rule, noteTextColor: fg
+    };
+  }
+
+  function drawDiagrams(root, force) {
+    const figs = Array.from(root.querySelectorAll(force ? ".diagram" : ".diagram:not(.done)"));
+    if (!figs.length) return;
+    const vars = diagramTheme();
+    const key = JSON.stringify(vars);
+    const pending = [];
+    for (const fig of figs) {
+      const svg = diagramCache.get(key + fig.dataset.source);
+      if (svg) { fig.innerHTML = svg; fig.className = "diagram done"; }
+      else pending.push(fig);
+    }
+    if (!pending.length) return;
+
+    loadMermaid().then(async mermaid => {
+      // Natural size keeps labels readable; wide diagrams scroll sideways instead of shrinking.
+      const natural = { useMaxWidth: false };
+      mermaid.initialize({
+        startOnLoad: false, securityLevel: "strict", theme: "base", themeVariables: vars,
+        flowchart: natural, sequence: natural, class: natural, state: natural, er: natural,
+        gantt: natural, journey: natural, gitGraph: natural, mindmap: natural, timeline: natural
+      });
+      for (const fig of pending) {
+        const id = "mdr-diagram-" + (++diagramSeq);
+        try {
+          const { svg } = await mermaid.render(id, fig.dataset.source);
+          diagramCache.set(key + fig.dataset.source, svg);
+          fig.innerHTML = svg;
+          fig.className = "diagram done";
+        } catch (err) {
+          document.getElementById("d" + id)?.remove(); // mermaid's scratch element
+          showDiagramError(fig, err);
+        }
+      }
+      onScroll();
+    }).catch(err => pending.forEach(fig => showDiagramError(fig, err)));
+  }
+
+  function showDiagramError(fig, err) {
+    fig.className = "diagram done error";
+    const msg = document.createElement("p");
+    msg.className = "diagram-error";
+    msg.textContent = (err && err.message ? err.message : String(err)).split("\n")[0];
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    code.textContent = fig.dataset.source;
+    pre.append(code);
+    fig.replaceChildren(msg, pre);
+  }
+
+  // "Match System" follows the OS appearance without a setPrefs call.
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => drawDiagrams(content, true));
 
   // ---------- scroll tracking ----------
 
@@ -214,6 +325,7 @@
 
       const toc = decorate(frag);
       content.replaceChildren(frag);
+      drawDiagrams(content);
       if (!keepScroll) { content.classList.remove("fade-in"); void content.offsetWidth; content.classList.add("fade-in"); }
       if (!body.trim()) content.innerHTML = '<p class="empty">This document is empty.</p>';
 
@@ -246,6 +358,7 @@
       if (p.typeface) root.dataset.typeface = p.typeface;
       if (p.fontSize) root.style.setProperty("--font-size", p.fontSize + "px");
       if (p.measure) root.style.setProperty("--measure", p.measure);
+      drawDiagrams(content, true);
       onScroll();
     },
 
