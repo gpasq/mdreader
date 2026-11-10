@@ -64,7 +64,8 @@ DocumentGroup(viewing: MarkdownDocument.self) { file in
 Sources/MDReader/     SwiftUI app, web view bridge, file watcher
 Resources/web/        Reader page: HTML, CSS, rendering script, marked, highlight.js
 Resources/Info.plist  Bundle info and .md document type registration
-scripts/              Icon renderer
+assets/icon.svg       App icon source
+scripts/              Icon renderer, default-app helper
 ```
 
 > [!NOTE]

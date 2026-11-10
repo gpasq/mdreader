@@ -22,11 +22,11 @@ cp $BIN $APP/Contents/MacOS/MDReader
 cp Resources/Info.plist $APP/Contents/Info.plist
 cp -R Resources/web $APP/Contents/Resources/web
 
-if [[ ! -f build/AppIcon.icns || scripts/make-icon.swift -nt build/AppIcon.icns ]]; then
+if [[ ! -f build/AppIcon.icns || scripts/make-icon.swift -nt build/AppIcon.icns || assets/icon.svg -nt build/AppIcon.icns ]]; then
   echo "› Rendering icon"
   ICONSET=build/AppIcon.iconset
   rm -rf $ICONSET && mkdir -p $ICONSET
-  swift scripts/make-icon.swift build/icon_1024.png >/dev/null
+  swift scripts/make-icon.swift assets/icon.svg build/icon_1024.png >/dev/null
   for s in 16 32 128 256 512; do
     sips -z $s $s build/icon_1024.png --out $ICONSET/icon_${s}x${s}.png >/dev/null
     sips -z $((s*2)) $((s*2)) build/icon_1024.png --out $ICONSET/icon_${s}x${s}@2x.png >/dev/null
