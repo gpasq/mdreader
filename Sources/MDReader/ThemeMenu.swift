@@ -64,3 +64,18 @@ struct ThemeMenuItems: View {
         }
     }
 }
+
+/// White, sepia or dark page regardless of the app theme.
+struct ReadingPanePicker: View {
+    @Binding var pane: ReaderPane
+
+    var body: some View {
+        Picker("Reading Pane", selection: $pane) {
+            ForEach(ReaderPane.allCases) { pane in
+                Label(pane.title, systemImage: pane.symbol).tag(pane)
+                if pane == .theme { Divider() }
+            }
+        }
+        .pickerStyle(.inline)
+    }
+}

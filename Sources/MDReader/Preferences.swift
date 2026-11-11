@@ -21,8 +21,35 @@ enum ReaderWidth: String, CaseIterable, Identifiable {
     }
 }
 
+/// The reading pane's colors: the app theme's, or a fixed page independent of it.
+enum ReaderPane: String, CaseIterable, Identifiable {
+    case theme, white, sepia, dark
+    var id: String { rawValue }
+    var title: String { self == .theme ? "Match Theme" : rawValue.capitalized }
+    var symbol: String {
+        switch self {
+        case .theme: "paintpalette"
+        case .white: "sun.max"
+        case .sepia: "book"
+        case .dark: "moon"
+        }
+    }
+
+    /// The theme the page is drawn in when the app theme is `appTheme`.
+    @MainActor
+    func pageTheme(for appTheme: ThemeDescriptor) -> ThemeDescriptor {
+        switch self {
+        case .theme: appTheme
+        case .white: ThemeLibrary.shared.theme(id: "reader.light")
+        case .sepia: ThemeLibrary.shared.theme(id: "reader.sepia")
+        case .dark: ThemeLibrary.shared.theme(id: "reader.dark")
+        }
+    }
+}
+
 enum PrefKey {
     static let theme = "theme"
+    static let pane = "readingPane"
     static let typeface = "typeface"
     static let fontSize = "fontSize"
     static let width = "width"
@@ -36,6 +63,7 @@ enum FontSize {
 
 /// Everything the web view needs to style a page.
 struct ReaderPrefs: Equatable {
+    /// The page's theme, after any reading-pane override.
     var theme: ThemeDescriptor
     var typeface: ReaderTypeface
     var fontSize: Double

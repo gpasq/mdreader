@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct MDReaderApp: App {
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
     @AppStorage(PrefKey.theme) private var themeID = ThemeLibrary.defaultID
+    @AppStorage(PrefKey.pane) private var pane: ReaderPane = .theme
     @AppStorage(PrefKey.fontSize) private var fontSize: Double = FontSize.default
     @AppStorage(PrefKey.typeface) private var typeface: ReaderTypeface = .sans
     @AppStorage(PrefKey.width) private var width: ReaderWidth = .medium
@@ -55,6 +56,9 @@ struct MDReaderApp: App {
                     .keyboardShortcut("-")
                 Divider()
                 Menu("Theme") { ThemeMenuItems(themeID: $themeID) }
+                Picker("Reading Pane", selection: $pane) {
+                    ForEach(ReaderPane.allCases) { Text($0.title).tag($0) }
+                }
                 Picker("Typeface", selection: $typeface) {
                     ForEach(ReaderTypeface.allCases) { Text($0.title).tag($0) }
                 }

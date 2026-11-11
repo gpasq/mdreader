@@ -108,6 +108,11 @@
   --note: #60a5fa; --tip: #4ade80; --important: #a78bfa; --warning: #fbbf24; --caution: #f87171;
 }
 
+/* Scrollbars and controls follow the page, which can differ from the window's appearance. */
+:root { color-scheme: light dark; }
+:root[data-theme="light"], :root[data-theme="sepia"], :root[data-theme="custom"]:not([data-dark]) { color-scheme: light; }
+:root[data-theme="dark"], :root[data-theme="custom"][data-dark] { color-scheme: dark; }
+
 :root[data-typeface="serif"] { --body-font: var(--serif-font); }
 :root[data-typeface="serif"] .markdown :is(h1, h2, h3) { font-family: var(--serif-font); letter-spacing: -0.01em; }
 

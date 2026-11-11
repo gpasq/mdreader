@@ -6,6 +6,9 @@ struct ReaderView: View {
 
     @AppStorage(PrefKey.theme) private var themeID = ThemeLibrary.defaultID
     private var theme: ThemeDescriptor { ThemeLibrary.shared.resolve(themeID) }
+    @AppStorage(PrefKey.pane) private var pane: ReaderPane = .theme
+    /// The reading pane can differ from the app theme, which still drives the window chrome.
+    private var pageTheme: ThemeDescriptor { pane.pageTheme(for: theme) }
     @AppStorage(PrefKey.typeface) private var typeface: ReaderTypeface = .sans
     @AppStorage(PrefKey.fontSize) private var fontSize: Double = FontSize.default
     @AppStorage(PrefKey.width) private var width: ReaderWidth = .medium
@@ -20,7 +23,7 @@ struct ReaderView: View {
     }
 
     private var prefs: ReaderPrefs {
-        ReaderPrefs(theme: theme, typeface: typeface, fontSize: fontSize, width: width)
+        ReaderPrefs(theme: pageTheme, typeface: typeface, fontSize: fontSize, width: width)
     }
 
     var body: some View {
@@ -60,7 +63,7 @@ struct ReaderView: View {
     }
 
     /// Matches the page so window resizes never flash a different color.
-    private var pageBackground: Color { Color(nsColor: theme.background) }
+    private var pageBackground: Color { Color(nsColor: pageTheme.background) }
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
@@ -83,6 +86,7 @@ struct ReaderView: View {
             Menu {
                 ThemeMenuItems(themeID: $themeID)
                 Divider()
+                ReadingPanePicker(pane: $pane)
                 Picker("Typeface", selection: $typeface) {
                     ForEach(ReaderTypeface.allCases) { Text($0.title).tag($0) }
                 }
