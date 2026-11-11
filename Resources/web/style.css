@@ -309,9 +309,14 @@ body { margin: 0; background: var(--bg); }
 .markdown .diagram-error { color: var(--caution); font-size: .9em; margin: 0 0 .8em; }
 .markdown .diagram.error pre { margin: 0; font: .85em/1.55 var(--mono-font); white-space: pre-wrap; color: var(--fg-soft); }
 
+/* Books: chapters run on as one page, with a quiet break between them. */
+.markdown .chapter + .chapter { margin-top: 3.5em; padding-top: 3.5em; border-top: 1px solid var(--rule); }
+.markdown .chapter svg { max-width: 100%; height: auto; }
+.markdown .chapter img { border-radius: 0; }
 .empty { text-align: center; color: var(--muted); margin-top: 30vh; font-family: var(--display-font); }
 
 @media print {
+  .markdown .chapter + .chapter { break-before: page; margin-top: 0; padding-top: 0; border-top: 0; }
   #progress { display: none; }
   #page { padding: 0; max-width: none; }
   .markdown .copy { display: none; }

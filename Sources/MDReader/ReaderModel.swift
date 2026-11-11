@@ -7,12 +7,12 @@ struct TOCItem: Identifiable, Hashable {
     let title: String
 }
 
-/// Per-window state: the document text, its outline, and a handle on the web view.
+/// Per-window state: the document content, its outline, and a handle on the web view.
 @Observable
 @MainActor
 final class ReaderModel {
-    private(set) var text: String
-    /// Bumped whenever `text` changes so the web view knows to re-render.
+    private(set) var content: DocumentContent
+    /// Bumped whenever `content` changes so the web view knows to re-render.
     private(set) var revision = 0
     let fileURL: URL?
 
@@ -25,15 +25,18 @@ final class ReaderModel {
     @ObservationIgnored weak var webView: WKWebView?
     @ObservationIgnored private var watcher: FileWatcher?
 
-    init(text: String, fileURL: URL?) {
-        self.text = text
+    init(content: DocumentContent, fileURL: URL?) {
+        self.content = content
         self.fileURL = fileURL
     }
+
+    var isBook: Bool { content.isBook }
 
     var readingMinutes: Int { max(1, Int((Double(wordCount) / 230).rounded())) }
 
     var baseHref: String? {
-        fileURL?.deletingLastPathComponent().absoluteString
+        if case .book(let book) = content { return book.root.absoluteString }
+        return fileURL?.deletingLastPathComponent().absoluteString
     }
 
     func startWatching() {
@@ -43,15 +46,24 @@ final class ReaderModel {
         }
     }
 
-    func update(text newText: String) {
-        guard newText != text else { return }
-        text = newText
+    func update(content newContent: DocumentContent) {
+        guard newContent != content else { return }
+        content = newContent
         revision += 1
     }
 
     func reloadFromDisk() {
-        guard let fileURL, let data = try? Data(contentsOf: fileURL) else { return }
-        update(text: MarkdownDocument.decode(data))
+        guard let fileURL else { return }
+        if isBook {
+            // Unzipping a whole book is too slow for the main thread.
+            Task.detached(priority: .userInitiated) {
+                guard let wrapper = try? FileWrapper(url: fileURL),
+                      let book = try? EPUBBook(wrapper: wrapper) else { return }
+                await MainActor.run { self.update(content: .book(book)) }
+            }
+        } else if let data = try? Data(contentsOf: fileURL) {
+            update(content: .markdown(ReaderDocument.decode(data)))
+        }
     }
 
     // MARK: Actions

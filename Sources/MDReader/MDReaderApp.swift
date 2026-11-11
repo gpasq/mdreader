@@ -11,7 +11,7 @@ struct MDReaderApp: App {
     @FocusedValue(\.reader) private var reader
 
     var body: some Scene {
-        DocumentGroup(viewing: MarkdownDocument.self) { file in
+        DocumentGroup(viewing: ReaderDocument.self) { file in
             ReaderView(document: file.document, fileURL: file.fileURL)
         }
         .defaultSize(width: 1080, height: 780)
@@ -92,6 +92,7 @@ struct MDReaderApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = true
+        UnpackedFolder.removeLeftovers()
         // Theme ids used to be bare names ("dark"); they now carry a source prefix.
         if let old = UserDefaults.standard.string(forKey: PrefKey.theme), !old.contains(".") {
             UserDefaults.standard.set("reader." + old, forKey: PrefKey.theme)

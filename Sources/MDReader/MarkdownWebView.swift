@@ -1,7 +1,7 @@
 import SwiftUI
 import WebKit
 
-/// Hosts the bundled reader page and feeds it markdown + style preferences.
+/// Hosts the bundled reader page and feeds it markdown or a book, plus style preferences.
 struct MarkdownWebView: NSViewRepresentable {
     let model: ReaderModel
     let prefs: ReaderPrefs
@@ -65,11 +65,20 @@ struct MarkdownWebView: NSViewRepresentable {
         func render(keepScroll: Bool) {
             guard ready, let webView else { return }
             renderedRevision = model.revision
-            webView.callAsyncJavaScript(
-                "mdr.render(md, base, keep)",
-                arguments: ["md": model.text, "base": model.baseHref ?? "", "keep": keepScroll],
-                in: nil, in: .page
-            )
+            switch model.content {
+            case .markdown(let text):
+                webView.callAsyncJavaScript(
+                    "mdr.render(md, base, keep)",
+                    arguments: ["md": text, "base": model.baseHref ?? "", "keep": keepScroll],
+                    in: nil, in: .page
+                )
+            case .book(let book):
+                webView.callAsyncJavaScript(
+                    "mdr.renderBook(book, keep)",
+                    arguments: ["book": book.jsArguments, "keep": keepScroll],
+                    in: nil, in: .page
+                )
+            }
         }
 
         // MARK: Messages from the page
@@ -124,7 +133,7 @@ struct MarkdownWebView: NSViewRepresentable {
                 var clean = URLComponents(url: url, resolvingAgainstBaseURL: false)
                 clean?.fragment = nil
                 let target = clean?.url ?? url
-                if Self.markdownExtensions.contains(target.pathExtension.lowercased()) {
+                if Self.readerExtensions.contains(target.pathExtension.lowercased()) {
                     NSDocumentController.shared.openDocument(withContentsOf: target, display: true) { _, _, _ in }
                     return
                 }
@@ -132,7 +141,7 @@ struct MarkdownWebView: NSViewRepresentable {
             NSWorkspace.shared.open(url)
         }
 
-        static let markdownExtensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext", "text", "txt"]
+        static let readerExtensions: Set<String> = ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext", "text", "txt", "epub"]
 
         // MARK: Navigation — the page never navigates away from itself
 

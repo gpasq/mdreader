@@ -297,10 +297,129 @@
 
   let appliedVars = [];
 
+  // Swaps in new content, reports the outline, and restores (or resets) the scroll position.
+  function show(frag, toc, targets, keepScroll, isEmpty) {
+    const prevRatio = keepScroll ? scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) : 0;
+    const prevY = scrollY;
+
+    content.replaceChildren(frag);
+    drawDiagrams(content);
+    if (!keepScroll) { content.classList.remove("fade-in"); void content.offsetWidth; content.classList.add("fade-in"); }
+    if (isEmpty) content.innerHTML = '<p class="empty">This document is empty.</p>';
+
+    headings = targets ? targets() : Array.from(content.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+    lastActive = undefined;
+
+    const text = content.innerText || "";
+    const words = (text.match(/[\p{L}\p{N}’'-]+/gu) || []).length;
+    post("rendered", { toc, words });
+
+    if (keepScroll) {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      scrollTo(0, prevY <= max ? prevY : prevRatio * max);
+    } else {
+      scrollTo(0, 0);
+    }
+    onScroll();
+  }
+
+  // ---------- books ----------
+
+  function parseChapter(src) {
+    let doc = new DOMParser().parseFromString(src, "application/xhtml+xml");
+    // Plenty of EPUBs aren't well-formed XML (stray &nbsp; and the like); the HTML parser copes.
+    if (!doc.body || doc.querySelector("parsererror")) doc = new DOMParser().parseFromString(src, "text/html");
+    return doc.body || doc.documentElement;
+  }
+
+  const XLINK = "http://www.w3.org/1999/xlink";
+  // Book styles are dropped; these inline properties would also fight the reader's theme and text size.
+  const THEMED_PROPS = ["color", "background", "background-color", "background-image", "font-family", "font-size", "line-height"];
+
+  // Makes one chapter's ids unique within the book and points every link and image at the right place.
+  function rebaseChapter(section, chapterURL, n, localId) {
+    section.querySelectorAll("a[name]:not([id])").forEach(a => { a.id = a.getAttribute("name"); });
+    section.querySelectorAll("[id]").forEach(el => { el.id = `c${n}-${el.id}`; });
+
+    const resolve = value => { try { return new URL(value, chapterURL).href; } catch (_) { return null; } };
+    section.querySelectorAll("[src], [poster]").forEach(el => {
+      for (const name of ["src", "poster"]) {
+        const v = el.getAttribute(name);
+        if (v != null) { const abs = resolve(v); if (abs) el.setAttribute(name, abs); }
+      }
+    });
+    section.querySelectorAll("*").forEach(el => {
+      const xl = el.getAttributeNS(XLINK, "href");
+      if (xl != null && el.localName === "image") { const abs = resolve(xl); if (abs) el.setAttributeNS(XLINK, "xlink:href", abs); }
+      if (el.hasAttribute("style")) {
+        for (const prop of THEMED_PROPS) el.style.removeProperty(prop);
+        if (!el.getAttribute("style").trim()) el.removeAttribute("style");
+      }
+      el.removeAttribute("bgcolor");
+      if (el.localName === "font") { el.removeAttribute("color"); el.removeAttribute("face"); el.removeAttribute("size"); }
+    });
+    section.querySelectorAll("a[href]").forEach(a => {
+      const abs = resolve(a.getAttribute("href"));
+      if (!abs) return;
+      const id = localId(abs);
+      a.setAttribute("href", id ? "#" + encodeURIComponent(id) : abs);
+    });
+  }
+
+  function renderBook(book, keepScroll) {
+    base.href = book.base || shellURL;
+    const norm = href => { try { const u = new URL(href); const hash = u.hash; u.hash = ""; return [u.href, hash]; } catch (_) { return [href, ""]; } };
+    const chapterIndex = new Map(book.chapters.map((c, n) => [norm(c.url)[0], n]));
+    // file:///…/ch3.xhtml#note-2 → "c3-note-2"; a bare chapter → its section.
+    const localId = href => {
+      const [page, hash] = norm(href);
+      const n = chapterIndex.get(page);
+      if (n === undefined) return null;
+      if (hash.length < 2) return `ch-${n}`;
+      let frag = hash.slice(1);
+      try { frag = decodeURIComponent(frag); } catch (_) {}
+      return `c${n}-${frag}`;
+    };
+
+    const frag = document.createDocumentFragment();
+    book.chapters.forEach((c, n) => {
+      const section = document.createElement("section");
+      section.className = "chapter";
+      for (const node of Array.from(parseChapter(c.html).childNodes)) section.append(document.importNode(node, true));
+      rebaseChapter(section, c.url, n, localId);
+      section.id = `ch-${n}`;
+      frag.append(section);
+    });
+    frag.querySelectorAll("style").forEach(el => el.remove());
+    sanitize(frag);
+    const headingToc = decorate(frag);
+
+    // Prefer the book's own table of contents; several entries can share a target, so each gets a marker.
+    const byId = new Map();
+    frag.querySelectorAll("[id]").forEach(el => { if (!byId.has(el.id)) byId.set(el.id, el); });
+    const toc = [], marks = [];
+    for (const entry of book.toc || []) {
+      const id = localId(entry.href);
+      const target = id && byId.get(id);
+      if (!target) continue;
+      const mark = document.createElement("span");
+      mark.className = "toc-mark";
+      mark.id = `toc-${toc.length}`;
+      target.before(mark);
+      marks.push(mark);
+      toc.push({ id: mark.id, level: entry.level, title: entry.title });
+    }
+
+    const useBookToc = toc.length > 0;
+    show(frag, useBookToc ? toc : headingToc,
+         useBookToc ? () => marks.slice().sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1) : null,
+         keepScroll, !book.chapters.length);
+  }
+
   window.mdr = {
+    renderBook,
+
     render(markdown, baseHref, keepScroll) {
-      const prevRatio = keepScroll ? scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight) : 0;
-      const prevY = scrollY;
       base.href = baseHref || shellURL;
 
       const { body, meta } = splitFrontMatter(markdown);
@@ -323,26 +442,7 @@
         frag.prepend(details);
       }
 
-      const toc = decorate(frag);
-      content.replaceChildren(frag);
-      drawDiagrams(content);
-      if (!keepScroll) { content.classList.remove("fade-in"); void content.offsetWidth; content.classList.add("fade-in"); }
-      if (!body.trim()) content.innerHTML = '<p class="empty">This document is empty.</p>';
-
-      headings = Array.from(content.querySelectorAll("h1, h2, h3, h4, h5, h6"));
-      lastActive = undefined;
-
-      const text = content.innerText || "";
-      const words = (text.match(/[\p{L}\p{N}’'-]+/gu) || []).length;
-      post("rendered", { toc, words });
-
-      if (keepScroll) {
-        const max = document.documentElement.scrollHeight - innerHeight;
-        scrollTo(0, prevY <= max ? prevY : prevRatio * max);
-      } else {
-        scrollTo(0, 0);
-      }
-      onScroll();
+      show(frag, decorate(frag), null, keepScroll, !body.trim());
     },
 
     setPrefs(p) {

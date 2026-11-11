@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ReaderView: View {
-    let document: MarkdownDocument
+    let document: ReaderDocument
     @State private var model: ReaderModel
 
     @AppStorage(PrefKey.theme) private var themeID = ThemeLibrary.defaultID
@@ -14,9 +14,9 @@ struct ReaderView: View {
     @State private var columns: NavigationSplitViewVisibility = .all
     @FocusState private var searchFocused: Bool
 
-    init(document: MarkdownDocument, fileURL: URL?) {
+    init(document: ReaderDocument, fileURL: URL?) {
         self.document = document
-        _model = State(initialValue: ReaderModel(text: document.text, fileURL: fileURL))
+        _model = State(initialValue: ReaderModel(content: document.content, fileURL: fileURL))
     }
 
     private var prefs: ReaderPrefs {
@@ -49,7 +49,7 @@ struct ReaderView: View {
             model.startWatching()
         }
         .onChange(of: columns) { _, newValue in showTOC = newValue != .detailOnly }
-        .onChange(of: document.text) { _, newValue in model.update(text: newValue) }
+        .onChange(of: document.content) { _, newValue in model.update(content: newValue) }
         .frame(minWidth: 560, minHeight: 420)
     }
 
@@ -101,7 +101,9 @@ struct ReaderView: View {
 
         ToolbarItem(placement: .primaryAction) {
             Menu {
-                Button("Open in Editor", systemImage: "square.and.pencil") { model.openInDefaultEditor() }
+                if !model.isBook {
+                    Button("Open in Editor", systemImage: "square.and.pencil") { model.openInDefaultEditor() }
+                }
                 Button("Show in Finder", systemImage: "folder") { model.revealInFinder() }
                 Divider()
                 Button("Export as PDF…", systemImage: "arrow.down.document") { model.exportPDF() }
@@ -127,7 +129,7 @@ struct OutlineSidebar: View {
                 ContentUnavailableView {
                     Label("No Outline", systemImage: "list.bullet.indent")
                 } description: {
-                    Text("Headings in this document will appear here.")
+                    Text(model.isBook ? "This book has no table of contents." : "Headings in this document will appear here.")
                 }
             } else {
                 ScrollViewReader { proxy in
@@ -154,7 +156,7 @@ struct OutlineSidebar: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let url = model.fileURL {
                 HStack(spacing: 8) {
-                    Image(systemName: "doc.richtext")
+                    Image(systemName: model.isBook ? "book.closed" : "doc.richtext")
                         .foregroundStyle(.tint)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(url.lastPathComponent)

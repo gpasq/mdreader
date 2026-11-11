@@ -4,7 +4,7 @@ version: 1.0
 ---
 # MDReader
 
-A quiet, native macOS reader for **Markdown** files. Open any `.md` file and it is typeset for reading — with an outline sidebar, live reload, syntax-highlighted code, and light, sepia and dark themes.
+A quiet, native macOS reader for **Markdown** files and **EPUB** books. Open any `.md` or `.epub` file and it is typeset for reading — with an outline sidebar, live reload, syntax-highlighted code, and light, sepia and dark themes.
 
 > [!TIP]
 > Choose **MDReader › Make MDReader the Default Markdown App** once, and every `.md` file you double-click in Finder opens here.
@@ -21,6 +21,7 @@ A quiet, native macOS reader for **Markdown** files. Open any `.md` file and it 
 - San Francisco or New York type; three page widths or fit-to-window
 - Find in document (<kbd>⌘</kbd> <kbd>F</kbd>), print (<kbd>⌘</kbd> <kbd>P</kbd>), export as PDF (<kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>E</kbd>), text size (<kbd>⌘</kbd> <kbd>+</kbd> / <kbd>⌘</kbd> <kbd>−</kbd>)
 - Relative images and links to other Markdown files just work
+- **EPUB books** — `.epub` files (and unpacked EPUB folders, as Apple Books stores them) open as one continuous page in your theme, with the book's own table of contents in the sidebar and working cross-references
 
 ### Task list
 
