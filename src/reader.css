@@ -1,12 +1,13 @@
-/* MDReader — reading styles */
+/* MDReader — reading styles. Everything here is scoped to #reader, whose theme can differ
+   from the window chrome's (see app.css). */
 
-:root {
+#reader {
   --font-size: 17px;
   --measure: 46rem;
-  --body-font: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --display-font: -apple-system, "SF Pro Display", BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --serif-font: ui-serif, "New York", "Iowan Old Style", Charter, Georgia, serif;
-  --mono-font: ui-monospace, "SF Mono", Menlo, monospace;
+  --body-font: -apple-system, "SF Pro Text", BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --display-font: -apple-system, "SF Pro Display", BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --serif-font: ui-serif, "New York", "Iowan Old Style", Charter, Cambria, Georgia, serif;
+  --mono-font: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", Consolas, monospace;
 
   /* Light */
   --bg: #ffffff;
@@ -37,7 +38,7 @@
   --note: #3b82f6; --tip: #16a34a; --important: #8b5cf6; --warning: #d97706; --caution: #dc2626;
 }
 
-:root[data-theme="sepia"] {
+#reader[data-theme="sepia"] {
   --bg: #f8f1e3;
   --fg: #3b2f22;
   --fg-soft: #4f4132;
@@ -56,7 +57,7 @@
   --hl-title: #2f6b6b; --hl-type: #6b4aa0; --hl-attr: #7a5b1c; --hl-meta: #6b3f20; --hl-variable: #2f6b6b;
 }
 
-:root[data-theme="dark"] {
+#reader[data-theme="dark"] {
   --bg: #1c1c1e;
   --fg: #ececf1;
   --fg-soft: #c7c7cc;
@@ -77,7 +78,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) , :root[data-theme="auto"] {
+  #reader:not([data-theme]), #reader[data-theme="auto"] {
     --bg: #1c1c1e; --fg: #ececf1; --fg-soft: #c7c7cc; --muted: #8e8e93; --rule: #38383c;
     --accent: #8e8cf6; --accent-soft: rgba(142,140,246,.14); --link: #a5a3ff; --mark: #6b5a12;
     --code-bg: #232326; --code-border: #2f2f33; --inline-code-bg: rgba(160,160,190,.16);
@@ -90,7 +91,7 @@
 
 /* Palette themes (VS Code): the app sets --bg, --fg, --accent and --hl-* inline;
    every other shade is derived from them here. */
-:root[data-theme="custom"] {
+#reader[data-theme="custom"] {
   --fg-soft: color-mix(in srgb, var(--fg) 88%, var(--bg));
   --muted: color-mix(in srgb, var(--fg) 55%, var(--bg));
   --rule: color-mix(in srgb, var(--fg) 14%, var(--bg));
@@ -103,22 +104,23 @@
   --table-stripe: color-mix(in srgb, var(--fg) 3%, var(--bg));
   --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
 }
-:root[data-theme="custom"][data-dark] {
+#reader[data-theme="custom"][data-dark] {
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
   --note: #60a5fa; --tip: #4ade80; --important: #a78bfa; --warning: #fbbf24; --caution: #f87171;
 }
 
 /* Scrollbars and controls follow the page, which can differ from the window's appearance. */
-:root { color-scheme: light dark; }
-:root[data-theme="light"], :root[data-theme="sepia"], :root[data-theme="custom"]:not([data-dark]) { color-scheme: light; }
-:root[data-theme="dark"], :root[data-theme="custom"][data-dark] { color-scheme: dark; }
+#reader { color-scheme: light dark; }
+#reader[data-theme="light"], #reader[data-theme="sepia"], #reader[data-theme="custom"]:not([data-dark]) { color-scheme: light; }
+#reader[data-theme="dark"], #reader[data-theme="custom"][data-dark] { color-scheme: dark; }
 
-:root[data-typeface="serif"] { --body-font: var(--serif-font); }
-:root[data-typeface="serif"] .markdown :is(h1, h2, h3) { font-family: var(--serif-font); letter-spacing: -0.01em; }
+#reader[data-typeface="serif"] { --body-font: var(--serif-font); }
+#reader[data-typeface="serif"] .markdown :is(h1, h2, h3) { font-family: var(--serif-font); letter-spacing: -0.01em; }
 
 * { box-sizing: border-box; }
 
-html {
+#reader {
+  position: relative;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--body-font);
@@ -126,21 +128,26 @@ html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-feature-settings: "kern", "liga", "calt";
-  scroll-padding-top: 24px;
   transition: background-color .25s ease, color .25s ease;
 }
 
-body { margin: 0; background: var(--bg); }
+/* One scroller per tab; only the active one is shown. */
+#reader .doc { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scroll-padding-top: 24px; outline: none; }
+#reader .doc[hidden] { display: none; }
 
-::selection { background: var(--accent-soft); }
+#reader ::selection { background: var(--accent-soft); }
+
+/* Find in document */
+::highlight(mdr-find) { background-color: color-mix(in srgb, #ffd23f 50%, transparent); }
+::highlight(mdr-find-current) { background-color: #ff9f0a; color: #000; }
 
 #progress {
-  position: fixed; top: 0; left: 0; height: 2px; width: 0;
+  position: absolute; top: 0; left: 0; height: 2px; width: 0;
   background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 50%, #ff6fb1));
   z-index: 10; transition: width .08s linear; border-radius: 0 2px 2px 0;
 }
 
-#page {
+#reader .page {
   max-width: var(--measure);
   margin: 0 auto;
   padding: 56px 48px 120px;
@@ -320,10 +327,38 @@ body { margin: 0; background: var(--bg); }
 .markdown .chapter img { border-radius: 0; }
 .empty { text-align: center; color: var(--muted); margin-top: 30vh; font-family: var(--display-font); }
 
+/* Dark pages print as light ones: printers don't print page backgrounds. */
 @media print {
+  #reader[data-theme="dark"], #reader[data-theme="custom"][data-dark] {
+    --bg: #ffffff !important; --fg: #1d1d1f !important; --fg-soft: #424245 !important; --muted: #86868b !important;
+    --rule: #e5e5ea !important; --accent: #5b5bd6 !important; --accent-soft: rgba(91, 91, 214, 0.10) !important;
+    --link: #4747c2 !important; --mark: #fff3a3 !important; --code-bg: #f6f6f8 !important; --code-border: #ececf0 !important;
+    --inline-code-bg: rgba(110, 110, 140, 0.11) !important; --table-stripe: #fafafc !important;
+    --hl-keyword: #ad3da4 !important; --hl-string: #c41a16 !important; --hl-number: #1c00cf !important;
+    --hl-comment: #8a8a8e !important; --hl-title: #3e6d74 !important; --hl-type: #703daa !important;
+    --hl-attr: #836c28 !important; --hl-meta: #643820 !important; --hl-variable: #3f6e74 !important; --hl-tag: #643820 !important;
+    --note: #3b82f6 !important; --tip: #16a34a !important; --important: #8b5cf6 !important; --warning: #d97706 !important; --caution: #dc2626 !important;
+    color-scheme: light;
+  }
+}
+@media print and (prefers-color-scheme: dark) {
+  #reader[data-theme="auto"] {
+    --bg: #ffffff; --fg: #1d1d1f; --fg-soft: #424245; --muted: #86868b; --rule: #e5e5ea; --accent: #5b5bd6;
+    --accent-soft: rgba(91, 91, 214, 0.10); --link: #4747c2; --mark: #fff3a3; --code-bg: #f6f6f8; --code-border: #ececf0;
+    --inline-code-bg: rgba(110, 110, 140, 0.11); --table-stripe: #fafafc;
+    --hl-keyword: #ad3da4; --hl-string: #c41a16; --hl-number: #1c00cf; --hl-comment: #8a8a8e; --hl-title: #3e6d74;
+    --hl-type: #703daa; --hl-attr: #836c28; --hl-meta: #643820; --hl-variable: #3f6e74;
+    --note: #3b82f6; --tip: #16a34a; --important: #8b5cf6; --warning: #d97706; --caution: #dc2626;
+    color-scheme: light;
+  }
+}
+
+@media print {
+  #reader { background: none; }
+  #reader .doc:not([hidden]) { position: static; overflow: visible; }
   .markdown .chapter + .chapter { break-before: page; margin-top: 0; padding-top: 0; border-top: 0; }
   #progress { display: none; }
-  #page { padding: 0; max-width: none; }
+  #reader .page { padding: 0; max-width: none; }
   .markdown .copy { display: none; }
   .markdown .diagram svg { max-width: 100%; height: auto; }
   .markdown .code-block, .markdown pre, .markdown img, .markdown table, .markdown .diagram { break-inside: avoid; }
