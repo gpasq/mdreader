@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Debug binary with the front end embedded (plain `cargo build` would expect a dev server).
+      "label": "Build MDReader (debug)",
+      "type": "shell",
+      "command": "npx tauri build --debug --no-bundle",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "Build MDReader (release)",
+      "type": "shell",
+      "command": "npx tauri build --no-bundle",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$rustc"]
+    }
+  ]
+}

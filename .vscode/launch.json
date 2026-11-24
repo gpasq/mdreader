@@ -1,0 +1,43 @@
+{
+  // Run and debug MDReader. Each configuration builds first; Cargo only recompiles what changed.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Same as `npm run app`: optimized build (no installer), then launch.
+      "name": "Run MDReader",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/run-app.mjs",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Opens the file in the active editor tab, e.g. a .md file you're writing.
+      "name": "Run MDReader with Current File",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/run-app.mjs",
+      "args": ["${file}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Debug build under the native debugger, for breakpoints in src-tauri/src.
+      // Windows uses the C/C++ extension (ms-vscode.cpptools); macOS uses CodeLLDB (vadimcn.vscode-lldb).
+      "name": "Debug MDReader (Rust)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/src-tauri/target/debug/mdreader.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build MDReader (debug)",
+      "osx": {
+        "type": "lldb",
+        "program": "${workspaceFolder}/src-tauri/target/debug/mdreader"
+      }
+    }
+  ]
+}

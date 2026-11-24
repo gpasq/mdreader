@@ -39,7 +39,8 @@ Requires [Rust](https://rustup.rs) and Node.js 18+, plus the Xcode Command Line 
 
 ```bash
 npm install
-npm run dev               # run from source
+npm run app               # build and run the app, no installer (`npm run app -- file.md` opens a file)
+npm run dev               # run from source with live reload, for development
 
 npm run build:mac         # universal .app and .dmg (Apple silicon + Intel)
 npm run build:win-x64     # NSIS installer and .msi

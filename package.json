@@ -5,6 +5,7 @@
   "description": "A quiet reader for Markdown files and EPUB books.",
   "scripts": {
     "tauri": "tauri",
+    "app": "node scripts/run-app.mjs",
     "dev": "tauri dev",
     "build": "tauri build",
     "build:win-x64": "tauri build --target x86_64-pc-windows-msvc",
