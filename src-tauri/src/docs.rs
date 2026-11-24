@@ -13,7 +13,7 @@ use crate::epub;
 
 /// Extensions the reader opens itself rather than handing to another app.
 pub const READER_EXTENSIONS: &[&str] = &[
-    "md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext", "text", "txt", "epub",
+    "md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext", "text", "txt", "epub", "pdf",
 ];
 pub const MARKDOWN_EXTENSIONS: &[&str] = &["md", "markdown", "mdown", "mkd", "mkdn", "mdwn", "mdtxt", "mdtext"];
 
@@ -25,6 +25,9 @@ pub enum Document {
     Markdown { path: String, name: String, dir: String, text: String, base: String },
     #[serde(rename_all = "camelCase")]
     Book { path: String, name: String, dir: String, #[serde(flatten)] book: epub::Book },
+    /// The page fetches the bytes itself (`read_pdf`) and draws them with pdf.js.
+    #[serde(rename_all = "camelCase")]
+    Pdf { path: String, name: String, dir: String, base: String },
 }
 
 pub fn open(path: &Path) -> Result<Document, String> {
@@ -39,6 +42,12 @@ pub fn open(path: &Path) -> Result<Document, String> {
         let book = epub::Book::open(&path)?;
         return Ok(Document::Book { path: path_str, name, dir: dir_str, book });
     }
+    if has_extension(&path, &["pdf"]) {
+        check_pdf(&path, &name)?;
+        // Relative links inside the PDF resolve against this, like a Markdown file's.
+        let base = url_for(&path);
+        return Ok(Document::Pdf { path: path_str, name, dir: dir_str, base });
+    }
     let bytes = std::fs::read(&path).map_err(|e| format!("Couldn't read “{name}”: {e}"))?;
     Ok(Document::Markdown {
         path: path_str,
@@ -47,6 +56,34 @@ pub fn open(path: &Path) -> Result<Document, String> {
         dir: dir_str,
         text: decode_text(&bytes),
     })
+}
+
+/// A PDF's bytes, after checking that it is one.
+pub fn read_pdf(path: &Path) -> Result<Vec<u8>, String> {
+    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    if !has_extension(path, &["pdf"]) {
+        return Err(format!("“{name}” isn't a PDF."));
+    }
+    let bytes = std::fs::read(path).map_err(|e| format!("Couldn't read “{name}”: {e}"))?;
+    if !is_pdf(&bytes) {
+        return Err(format!("“{name}” doesn't look like a PDF."));
+    }
+    Ok(bytes)
+}
+
+/// Checks the header without reading the whole file.
+fn check_pdf(path: &Path, name: &str) -> Result<(), String> {
+    use std::io::Read;
+    let mut head = Vec::with_capacity(1024);
+    std::fs::File::open(path)
+        .and_then(|f| f.take(1024).read_to_end(&mut head))
+        .map_err(|e| format!("Couldn't read “{name}”: {e}"))?;
+    if is_pdf(&head) { Ok(()) } else { Err(format!("“{name}” doesn't look like a PDF.")) }
+}
+
+/// Readers accept a little junk before the `%PDF-` header, so we do too.
+fn is_pdf(bytes: &[u8]) -> bool {
+    bytes[..bytes.len().min(1024)].windows(5).any(|w| w == b"%PDF-")
 }
 
 pub fn has_extension(path: &Path, exts: &[&str]) -> bool {

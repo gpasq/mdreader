@@ -4,10 +4,10 @@ version: 1.0
 ---
 # MDReader
 
-A quiet reader for **Markdown** files and **EPUB** books, for macOS and Windows (x64 and ARM64). Open any `.md` or `.epub` file and it is typeset for reading — with an outline sidebar, live reload, syntax-highlighted code, and light, sepia and dark themes.
+A quiet reader for **Markdown** files, **EPUB** books and **PDFs**, for macOS and Windows (x64 and ARM64). Open any `.md`, `.epub` or `.pdf` file and it is typeset for reading — with an outline sidebar, live reload, syntax-highlighted code, and light, sepia and dark themes.
 
 > [!TIP]
-> On macOS, choose **More (⋯) › Make MDReader the Default Markdown App…** in the toolbar once, and every `.md` file you double-click in Finder opens here. On Windows the installer registers `.md` and `.epub`; the same item takes you to the Settings page where you pick it.
+> On macOS, choose **More (⋯) › Make MDReader the Default Markdown App…** in the toolbar once, and every `.md` file you double-click in Finder opens here. On Windows the installer registers `.md`, `.epub` and `.pdf`; the same item takes you to the Settings page where you pick it.
 
 ## Features
 
@@ -23,6 +23,7 @@ A quiet reader for **Markdown** files and **EPUB** books, for macOS and Windows 
 - Find in document, print, export as PDF, text size
 - Relative images and links to other Markdown files just work; drop files on the window to open them
 - **EPUB books** — `.epub` files (and unpacked EPUB folders, as Apple Books stores them) open as one continuous page in your theme, with the book's own table of contents in the sidebar and working cross-references
+- **PDFs** — drawn in the window by a bundled [PDF.js](https://mozilla.github.io/pdf.js/), a page at a time as you scroll, with the PDF's bookmarks in the sidebar, selectable text, Find, working links and live reload; the text-size buttons zoom the pages. (Print or export a PDF from another app.)
 
 ### Task list
 
@@ -70,9 +71,9 @@ Builds are unsigned. On macOS, right-click the app and choose **Open** the first
 
 ```
 src/                  The window: index.html, chrome (app.css), reading styles (reader.css)
-src/js/               app.js (tabs, sidebar, toolbar, commands), render.js (Markdown and books), themes.js
-src/vendor/           marked, highlight.js, mermaid
-src-tauri/src/        Rust: commands, doc: URL scheme, EPUB unpacking, file watching, printing/PDF, the macOS menu bar
+src/js/               app.js (tabs, sidebar, toolbar, commands), render.js (Markdown and books), pdf.js (PDFs), themes.js
+src/vendor/           marked, highlight.js, mermaid, pdfjs (pdfjs-dist legacy build, with its CMaps, standard fonts and decoders)
+src-tauri/src/        Rust: commands, doc: URL scheme, EPUB unpacking, PDF loading, file watching, printing/PDF export, the macOS menu bar
 src-tauri/Info.plist  macOS document types (merged into the bundle)
 assets/icon-glyph.svg App icon source, borderless and full size (`npm run icons` regenerates src-tauri/icons)
 assets/icon.svg       The original tiled icon design, kept for reference

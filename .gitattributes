@@ -15,6 +15,10 @@
 *.ttf  binary
 *.otf  binary
 *.pdf  binary
+*.wasm binary
+*.bcmap binary
+*.pfb  binary
+*.icc  binary
 *.zip  binary
 *.exe  binary
 *.dll  binary

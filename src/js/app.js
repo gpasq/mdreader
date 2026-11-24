@@ -20,6 +20,8 @@
   // ---------- preferences ----------
 
   const FONT = { def: 17, min: 12, max: 30 };
+  // PDFs zoom their pages instead of the text size: a factor on the page width.
+  const ZOOM = { def: 1, min: 0.5, max: 3, step: 1.1 };
   const WIDTHS = [
     { id: "narrow", name: "Narrow", measure: "38rem" },
     { id: "medium", name: "Medium", measure: "46rem" },
@@ -30,7 +32,7 @@
     { id: "sans", name: isMac ? "San Francisco" : "Sans Serif" },
     { id: "serif", name: isMac ? "New York" : "Serif" }
   ];
-  const DEFAULTS = { theme: Themes.DEFAULT_ID, pane: "theme", typeface: "sans", fontSize: FONT.def, width: "medium", showTOC: true, sidebarWidth: 250 };
+  const DEFAULTS = { theme: Themes.DEFAULT_ID, pane: "theme", typeface: "sans", fontSize: FONT.def, width: "medium", showTOC: true, sidebarWidth: 250, pdfZoom: ZOOM.def };
 
   let prefs = Object.assign({}, DEFAULTS, (() => { try { return JSON.parse(localStorage.getItem("mdreader.prefs")) || {}; } catch (_) { return {}; } })());
 
@@ -55,6 +57,7 @@
     reader.dataset.typeface = prefs.typeface;
     reader.style.setProperty("--font-size", prefs.fontSize + "px");
     reader.style.setProperty("--measure", (WIDTHS.find(w => w.id === prefs.width) || WIDTHS[1]).measure);
+    reader.style.setProperty("--pdf-zoom", prefs.pdfZoom);
 
     // The window chrome follows the app theme.
     const p = appTheme.palette;
@@ -70,6 +73,8 @@
     root.style.setProperty("--sidebar-w", prefs.sidebarWidth + "px");
 
     if (!changed || ["theme", "pane", "typeface"].includes(changed)) tabs.forEach(t => t.view.redrawDiagrams());
+    if (!changed || ["width", "pdfZoom"].includes(changed)) tabs.forEach(t => { if (t.view.relayout) t.view.relayout(); });
+    updateZoomButtons();
     if (active) active.view.onScroll();
   }
 
@@ -88,16 +93,18 @@
   const tabFor = path => tabs.find(t => samePath(t.path, path));
 
   function createTab(path) {
-    const tab = { path, name: basename(path), dir: dirname(path), kind: null, text: null, bookId: null, toc: [], words: 0, activeId: null };
-    tab.view = new DocView({
-      onRendered: ({ toc, words }) => {
-        tab.toc = toc; tab.words = words;
+    const tab = { path, name: basename(path), dir: dirname(path), kind: null, text: null, bookId: null, toc: [], words: 0, pages: 0, activeId: null };
+    tab.host = {
+      onRendered: ({ toc, words, pages }) => {
+        tab.toc = toc; tab.words = words; tab.pages = pages || 0;
         if (tab === active) { renderOutline(); updateTitle(); }
       },
       onActive: id => { tab.activeId = id; if (tab === active) highlightOutline(true); },
       onProgress: ratio => { if (tab === active) progress.style.width = ratio * 100 + "%"; },
-      onLink: href => followLink(href)
-    });
+      onLink: href => followLink(href),
+      onFind: state => { if (tab === active) showFindState(state); }
+    };
+    tab.view = new DocView(tab.host);
     tab.view.hide();
 
     const el = document.createElement("div");
@@ -120,15 +127,32 @@
     tab.el.title = tab.path;
   }
 
+  /** PDFs need a PdfView and everything else a DocView; swaps the tab's view if it has the other. */
+  function viewFor(tab, kind) {
+    const View = kind === "pdf" ? PdfView : DocView;
+    if (tab.view instanceof View) return tab.view;
+    const shown = tab.view.visible;
+    tab.view.destroy();
+    tab.view = new View(tab.host);
+    if (shown) tab.view.show(); else tab.view.hide();
+    return tab.view;
+  }
+
   /** Reads the file and renders it. `keepScroll` for reloads; `force` re-renders unchanged text. */
   async function loadTab(tab, keepScroll, force) {
     const doc = await invoke("open_document", { path: tab.path });
     if (!tabs.includes(tab)) { if (doc.bookId) invoke("close_book", { bookId: doc.bookId }); return; }
+    // The bytes come as an ArrayBuffer, straight from the file.
+    const data = doc.kind === "pdf" ? await invoke("read_pdf", { path: doc.path }) : null;
+    if (!tabs.includes(tab)) return;
     Object.assign(tab, { path: doc.path, name: doc.name, dir: doc.dir, kind: doc.kind });
+    const view = viewFor(tab, doc.kind);
     if (doc.kind === "markdown") {
       if (keepScroll && !force && doc.text === tab.text) return;
       tab.text = doc.text;
-      tab.view.renderMarkdown(doc.text, doc.base, keepScroll);
+      view.renderMarkdown(doc.text, doc.base, keepScroll);
+    } else if (doc.kind === "pdf") {
+      await view.renderPdf(data, doc.base, keepScroll);
     } else {
       const old = tab.bookId;
       tab.bookId = doc.bookId;
@@ -137,7 +161,7 @@
       if (old) invoke("close_book", { bookId: old });
     }
     labelTab(tab);
-    if (tab === active) { updateTitle(); updateFileInfo(); }
+    if (tab === active) { updateTitle(); updateFileInfo(); updateZoomButtons(); }
     if (!tab.watching) { tab.watching = true; invoke("watch_file", { path: tab.path }).catch(() => {}); }
   }
 
@@ -173,6 +197,7 @@
     renderOutline();
     updateTitle();
     updateFileInfo();
+    updateZoomButtons();
     if (findInput.value) runFind(); else showFindState(null);
     tab.view.el.focus({ preventScroll: true });
     saveSession();
@@ -214,8 +239,9 @@
   function updateTitle() {
     $("doc-title").textContent = active ? active.name : "";
     const words = active ? active.words : 0;
-    $("doc-subtitle").textContent = words
-      ? `${words.toLocaleString()} words · ${Math.max(1, Math.round(words / 230))} min read`
+    const pages = active && active.kind === "pdf" ? active.pages : 0;
+    $("doc-subtitle").textContent = pages ? `${pages.toLocaleString()} ${pages === 1 ? "page" : "pages"}`
+      : words ? `${words.toLocaleString()} words · ${Math.max(1, Math.round(words / 230))} min read`
       : "";
     document.title = active ? `${active.name} — MDReader` : "MDReader";
     if (appWindow) appWindow.setTitle(document.title).catch(() => {});
@@ -226,7 +252,9 @@
     outline.replaceChildren();
     outlineEmpty.hidden = toc.length > 0;
     $("outline-empty-text").textContent = !active ? "Open a document to see its outline."
-      : active.kind === "book" ? "This book has no table of contents." : "Headings in this document will appear here.";
+      : active.kind === "book" ? "This book has no table of contents."
+      : active.kind === "pdf" ? "This PDF has no bookmarks."
+      : "Headings in this document will appear here.";
     if (!toc.length) return;
     const min = Math.min(...toc.map(i => i.level));
     const frag = document.createDocumentFragment();
@@ -275,6 +303,10 @@
     box.title = active.path;
     $("file-icon").innerHTML = active.kind === "book"
       ? '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16v12H5.5A1.5 1.5 0 0 0 4 16.5z"/><path d="M4 16.5A1.5 1.5 0 0 0 5.5 18H16v-3"/>'
+      : active.kind === "pdf"
+      // A page with a corner fold and a "PDF" tag across it.
+      ? '<path d="M5 9V2.5h6.5L15 6v3M5 15.5v2h10v-2"/><path d="M11.5 2.5V6H15"/><rect x="2.5" y="9" width="15" height="6.5" rx="1.5" class="fill"/>' +
+        '<path d="M5.4 14v-3.5h1.1a1 1 0 0 1 0 2.1H5.4M9.2 14v-3.5h.8a1.75 1.75 0 0 1 0 3.5zM13.2 14v-3.5h1.9M13.2 12.2h1.5" style="stroke: var(--ui-bar); stroke-width: 1.1"/>'
       : '<path d="M5 2.5h6.5L15 6v11.5H5z"/><path d="M11.5 2.5V6H15M7.5 10h5M7.5 13h5"/>';
   }
 
@@ -302,7 +334,8 @@
   function showFindState(state) {
     const q = findInput.value;
     findBox.classList.toggle("active", !!q && !!active);
-    findCount.textContent = !q || !active || !state ? "" : state.count ? `${state.index + 1} of ${state.count}` : "Not found";
+    findCount.textContent = !q || !active || !state ? "" : state.pending ? "Searching…"
+      : state.count ? `${state.index + 1} of ${state.count}` : "Not found";
   }
 
   function runFind() {
@@ -421,12 +454,15 @@
     for (const t of TYPEFACES) items.push({ label: t.name, check: prefs.typeface === t.id, action: () => setPref("typeface", t.id) });
     items.push({ header: "Page Width" });
     for (const w of WIDTHS) items.push({ label: w.name, check: prefs.width === w.id, action: () => setPref("width", w.id) });
-    items.push({ sep: true }, { label: "Reset Text Size", key: shortcut("0"), action: () => setPref("fontSize", FONT.def), disabled: prefs.fontSize === FONT.def });
+    if (isPdf()) items.push({ sep: true }, { label: "Actual Size", key: shortcut("0"), action: actions["zoom-reset"], disabled: prefs.pdfZoom === ZOOM.def });
+    else items.push({ sep: true }, { label: "Reset Text Size", key: shortcut("0"), action: actions["zoom-reset"], disabled: prefs.fontSize === FONT.def });
     return items;
   }
 
   function moreItems() {
     const none = !active;
+    // A PDF is already a PDF, and a lazily drawn one doesn't print well from the page; open it elsewhere for that.
+    const pdf = isPdf();
     return [
       { label: "Open…", key: shortcut("O"), action: openDialog },
       { label: "Reload", key: shortcut("R"), action: actions.reload, disabled: none },
@@ -435,8 +471,8 @@
       { label: "Open in Editor", action: () => invoke("open_in_editor", { path: active.path }).catch(e => alertBox("Couldn't open an editor", e)), disabled: none || active.kind !== "markdown" },
       { label: isMac ? "Show in Finder" : "Show in Explorer", action: () => invoke("reveal", { path: active.path }).catch(e => alertBox("Couldn't show the file", e)), disabled: none },
       { sep: true },
-      { label: "Export as PDF…", key: shortcut("E", true), action: exportPDF, disabled: none },
-      { label: "Print…", key: shortcut("P"), action: print, disabled: none },
+      { label: "Export as PDF…", key: shortcut("E", true), action: exportPDF, disabled: none || pdf },
+      { label: "Print…", key: shortcut("P"), action: print, disabled: none || pdf },
       { sep: true },
       { label: "Make MDReader the Default Markdown App…", action: actions["make-default"] }
     ];
@@ -465,14 +501,16 @@
     if (paths.length) openPaths(paths);
   }
 
+  const isPdf = () => !!active && active.kind === "pdf";
+
   async function print() {
-    if (!active) return;
+    if (!active || isPdf()) return;
     if (isMac) invoke("print_page").catch(e => alertBox("Couldn't print", e));
     else window.print();
   }
 
   async function exportPDF() {
-    if (!active) return;
+    if (!active || isPdf()) return;
     const name = active.name.replace(/\.[^.]+$/, "") + ".pdf";
     try { await invoke("export_pdf", { name, dir: active.dir }); }
     catch (err) { alertBox("Couldn't export as PDF", err); }
@@ -513,14 +551,25 @@
     "find-prev": () => stepFind(true),
     "toggle-sidebar": () => setPref("showTOC", !prefs.showTOC),
     "reload": () => { if (active) loadTab(active, true, true).catch(e => alertBox(`Couldn't reload “${active.name}”`, e)); },
-    "zoom-reset": () => setPref("fontSize", FONT.def),
-    "zoom-in": () => setPref("fontSize", Math.min(FONT.max, prefs.fontSize + 1)),
-    "zoom-out": () => setPref("fontSize", Math.max(FONT.min, prefs.fontSize - 1)),
+    "zoom-reset": () => isPdf() ? setPref("pdfZoom", ZOOM.def) : setPref("fontSize", FONT.def),
+    "zoom-in": () => isPdf() ? zoomPdf(ZOOM.step) : setPref("fontSize", Math.min(FONT.max, prefs.fontSize + 1)),
+    "zoom-out": () => isPdf() ? zoomPdf(1 / ZOOM.step) : setPref("fontSize", Math.max(FONT.min, prefs.fontSize - 1)),
     "appearance": () => openMenu($("btn-appearance"), appearanceItems()),
     "next-tab": () => selectTab(1),
     "prev-tab": () => selectTab(-1),
     "make-default": () => invoke("make_default_app")
   };
+
+  function zoomPdf(by) {
+    const z = Math.round(prefs.pdfZoom * by * 100) / 100;
+    setPref("pdfZoom", Math.max(ZOOM.min, Math.min(ZOOM.max, Math.abs(z - 1) < 0.04 ? 1 : z)));
+  }
+
+  /** The A/A buttons size text, or zoom a PDF's pages. */
+  function updateZoomButtons() {
+    const what = isPdf() ? ["Zoom out", "Zoom in"] : ["Decrease text size", "Increase text size"];
+    [$("btn-smaller"), $("btn-bigger")].forEach((b, i) => { b.title = what[i]; b.setAttribute("aria-label", what[i]); });
+  }
 
   function trigger(action) {
     closeMenu();

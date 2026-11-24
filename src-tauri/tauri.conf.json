@@ -28,7 +28,7 @@
         "img-src": "* data: blob: doc: http://doc.localhost",
         "media-src": "* data: blob: doc: http://doc.localhost",
         "font-src": "'self' data: doc: http://doc.localhost",
-        "connect-src": "ipc: http://ipc.localhost",
+        "connect-src": "ipc: http://ipc.localhost 'self'",
         "object-src": "'none'",
         "frame-src": "'none'"
       },
@@ -39,8 +39,8 @@
     "active": true,
     "targets": "all",
     "category": "Productivity",
-    "shortDescription": "A quiet reader for Markdown files and EPUB books",
-    "longDescription": "Open any Markdown file or EPUB book and it is typeset for reading, with an outline sidebar, live reload, syntax-highlighted code, Mermaid diagrams and light, sepia and dark themes.",
+    "shortDescription": "A quiet reader for Markdown files, EPUB books and PDFs",
+    "longDescription": "Open any Markdown file, EPUB book or PDF and it is typeset for reading, with an outline sidebar, live reload, syntax-highlighted code, Mermaid diagrams and light, sepia and dark themes.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
