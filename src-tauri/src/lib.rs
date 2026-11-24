@@ -6,6 +6,7 @@
 
 mod docs;
 mod epub;
+#[cfg(target_os = "macos")]
 mod menu;
 mod platform;
 mod watch;
@@ -215,16 +216,18 @@ pub fn run() {
         }));
     }
 
+    // No menu bar except macOS's system one; see menu.rs.
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.menu(menu::build);
+    }
+
     let app = builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(Launch(Mutex::new(Some(vec![]))))
         .manage(watch::Watchers::default())
         .register_asynchronous_uri_scheme_protocol("doc", docs::protocol)
-        .menu(menu::build)
-        .on_menu_event(|app, event| {
-            let _ = app.emit("menu", event.id().0.as_str());
-        })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
                 let files = paths.iter().map(|p| p.to_string_lossy().into_owned()).collect();

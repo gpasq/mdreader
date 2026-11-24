@@ -7,7 +7,7 @@ version: 1.0
 A quiet reader for **Markdown** files and **EPUB** books, for macOS and Windows (x64 and ARM64). Open any `.md` or `.epub` file and it is typeset for reading — with an outline sidebar, live reload, syntax-highlighted code, and light, sepia and dark themes.
 
 > [!TIP]
-> On macOS, choose **MDReader › Make MDReader the Default Markdown App** once, and every `.md` file you double-click in Finder opens here. On Windows the installer registers `.md` and `.epub`; **File › Make MDReader the Default Markdown App…** takes you to the Settings page where you pick it.
+> On macOS, choose **More (⋯) › Make MDReader the Default Markdown App…** in the toolbar once, and every `.md` file you double-click in Finder opens here. On Windows the installer registers `.md` and `.epub`; the same item takes you to the Settings page where you pick it.
 
 ## Features
 
@@ -72,7 +72,7 @@ Builds are unsigned. On macOS, right-click the app and choose **Open** the first
 src/                  The window: index.html, chrome (app.css), reading styles (reader.css)
 src/js/               app.js (tabs, sidebar, toolbar, commands), render.js (Markdown and books), themes.js
 src/vendor/           marked, highlight.js, mermaid
-src-tauri/src/        Rust: commands, doc: URL scheme, EPUB unpacking, file watching, printing/PDF, menus
+src-tauri/src/        Rust: commands, doc: URL scheme, EPUB unpacking, file watching, printing/PDF, the macOS menu bar
 src-tauri/Info.plist  macOS document types (merged into the bundle)
 assets/icon-glyph.svg App icon source, borderless and full size (`npm run icons` regenerates src-tauri/icons)
 assets/icon.svg       The original tiled icon design, kept for reference

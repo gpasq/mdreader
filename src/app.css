@@ -20,14 +20,16 @@
   --ui-popover: color-mix(in srgb, var(--ui-text) 1%, var(--ui-base));
   --ui-shadow: 0 10px 30px rgba(0, 0, 0, .14), 0 1px 3px rgba(0, 0, 0, .1);
   --toolbar-h: 46px;
+  /* The app icon's lime, deepened to read on light backgrounds; whatever the theme. */
+  --brand: #65a30d;
 }
 :root[data-chrome="sepia"] { --ui-base: #f8f1e3; --ui-text: #3b2f22; --ui-accent: #b5652b; }
-:root[data-chrome="dark"] { --ui-base: #1c1c1e; --ui-text: #ececf1; --ui-accent: #8e8cf6; color-scheme: dark; }
+:root[data-chrome="dark"] { --ui-base: #1c1c1e; --ui-text: #ececf1; --ui-accent: #8e8cf6; color-scheme: dark; --brand: #84cc16; }
 @media (prefers-color-scheme: dark) {
-  :root[data-chrome="auto"] { --ui-base: #1c1c1e; --ui-text: #ececf1; --ui-accent: #8e8cf6; color-scheme: dark; }
+  :root[data-chrome="auto"] { --ui-base: #1c1c1e; --ui-text: #ececf1; --ui-accent: #8e8cf6; color-scheme: dark; --brand: #84cc16; }
 }
 /* Palette themes set --ui-base, --ui-text and --ui-accent inline. */
-:root[data-chrome-dark] { color-scheme: dark; --ui-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4); }
+:root[data-chrome-dark] { color-scheme: dark; --brand: #84cc16; --ui-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4); }
 @media (prefers-color-scheme: dark) {
   :root[data-chrome="auto"] { --ui-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .4); }
 }
@@ -61,6 +63,20 @@ svg .fill { fill: currentColor; stroke: none; }
 }
 #traffic-lights { display: none; }
 .mac #traffic-lights { display: block; width: 70px; height: 100%; flex: none; }
+
+/* The app's name, as in Runner and DataWorx: icon, "MD" + "Reader" in the icon's lime, and
+   "by tecnicl". */
+#brand {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: 0 10px 0 2px; margin-right: 2px;
+  white-space: nowrap; overflow: hidden;
+}
+#brand img { display: block; width: 24px; height: 24px; flex: none; }
+#brand-text { display: flex; align-items: baseline; gap: 7px; line-height: 1; }
+#brand-name { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; color: var(--ui-text); }
+#brand-name span { color: var(--brand); }
+#brand-by { font-size: 13px; color: var(--ui-muted); }
+@media (max-width: 760px) { #brand-by { display: none; } }
 
 .tb {
   display: grid; place-items: center;

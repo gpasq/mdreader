@@ -212,7 +212,7 @@
   // ---------- title, outline, file info ----------
 
   function updateTitle() {
-    $("doc-title").textContent = active ? active.name : "MDReader";
+    $("doc-title").textContent = active ? active.name : "";
     const words = active ? active.words : 0;
     $("doc-subtitle").textContent = words
       ? `${words.toLocaleString()} words · ${Math.max(1, Math.round(words / 230))} min read`
@@ -428,11 +428,17 @@
   function moreItems() {
     const none = !active;
     return [
+      { label: "Open…", key: shortcut("O"), action: openDialog },
+      { label: "Reload", key: shortcut("R"), action: actions.reload, disabled: none },
+      { label: "Close Tab", key: shortcut("W"), action: actions["close-tab"], disabled: none },
+      { sep: true },
       { label: "Open in Editor", action: () => invoke("open_in_editor", { path: active.path }).catch(e => alertBox("Couldn't open an editor", e)), disabled: none || active.kind !== "markdown" },
       { label: isMac ? "Show in Finder" : "Show in Explorer", action: () => invoke("reveal", { path: active.path }).catch(e => alertBox("Couldn't show the file", e)), disabled: none },
       { sep: true },
       { label: "Export as PDF…", key: shortcut("E", true), action: exportPDF, disabled: none },
-      { label: "Print…", key: shortcut("P"), action: print, disabled: none }
+      { label: "Print…", key: shortcut("P"), action: print, disabled: none },
+      { sep: true },
+      { label: "Make MDReader the Default Markdown App…", action: actions["make-default"] }
     ];
   }
 
@@ -516,12 +522,7 @@
     "make-default": () => invoke("make_default_app")
   };
 
-  // The same shortcut can arrive both from the menu bar and as a key press; run it once.
-  const lastRun = {};
-  function trigger(action, source) {
-    const now = performance.now(), prev = lastRun[action];
-    if (prev && prev.source !== source && now - prev.time < 300) return;
-    lastRun[action] = { source, time: now };
+  function trigger(action) {
     closeMenu();
     if (actions[action]) actions[action]();
   }
@@ -553,14 +554,14 @@
         return;
       }
     }
-    if (action) { e.preventDefault(); e.stopPropagation(); trigger(action, "key"); }
+    if (action) { e.preventDefault(); e.stopPropagation(); trigger(action); }
   }, true);
 
   // ---------- toolbar ----------
 
-  $("btn-sidebar").addEventListener("click", () => trigger("toggle-sidebar", "ui"));
-  $("btn-smaller").addEventListener("click", () => trigger("zoom-out", "ui"));
-  $("btn-bigger").addEventListener("click", () => trigger("zoom-in", "ui"));
+  $("btn-sidebar").addEventListener("click", () => trigger("toggle-sidebar"));
+  $("btn-smaller").addEventListener("click", () => trigger("zoom-out"));
+  $("btn-bigger").addEventListener("click", () => trigger("zoom-in"));
   $("btn-appearance").addEventListener("click", e => { if (menuAnchor !== e.currentTarget) openMenu(e.currentTarget, appearanceItems()); });
   $("btn-more").addEventListener("click", e => { if (menuAnchor !== e.currentTarget) openMenu(e.currentTarget, moreItems()); });
   $("tab-add").addEventListener("click", openDialog);
@@ -584,7 +585,6 @@
     if (!T) return;
 
     info = await invoke("app_info").catch(() => info);
-    T.event.listen("menu", e => trigger(e.payload, "menu"));
     T.event.listen("open-files", e => openPaths(e.payload));
     T.event.listen("doc-changed", e => {
       for (const t of tabs) if (samePath(t.path, e.payload)) loadTab(t, true).catch(() => {});
