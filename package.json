@@ -1,0 +1,18 @@
+{
+  "name": "mdreader",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A quiet reader for Markdown files and EPUB books.",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:win-x64": "tauri build --target x86_64-pc-windows-msvc",
+    "build:win-arm64": "tauri build --target aarch64-pc-windows-msvc --bundles nsis",
+    "build:mac": "tauri build --target universal-apple-darwin",
+    "icons": "node scripts/icons.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

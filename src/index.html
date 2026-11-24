@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" data-chrome="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDReader</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="reader.css">
+<script src="vendor/marked.min.js"></script>
+<script src="vendor/highlight.min.js"></script>
+</head>
+<body>
+<header id="toolbar" class="drag">
+  <div id="traffic-lights" class="drag"></div>
+  <button class="tb" id="btn-sidebar" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+    <svg viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13M4.5 6.5h1M4.5 8.5h1M4.5 10.5h1"/></svg>
+  </button>
+  <div id="title-block" class="drag">
+    <div id="doc-title" class="drag">MDReader</div>
+    <div id="doc-subtitle" class="drag"></div>
+  </div>
+  <div class="tb-group" role="group" aria-label="Text Size">
+    <button class="tb" id="btn-smaller" title="Decrease text size" aria-label="Decrease text size"><span class="glyph small">A</span></button>
+    <button class="tb" id="btn-bigger" title="Increase text size" aria-label="Increase text size"><span class="glyph big">A</span></button>
+  </div>
+  <button class="tb" id="btn-appearance" title="Appearance" aria-label="Appearance" aria-haspopup="menu">
+    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M10 3a7 7 0 0 0 0 14z" class="fill"/></svg>
+  </button>
+  <button class="tb" id="btn-more" title="More" aria-label="More" aria-haspopup="menu">
+    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><circle cx="6.8" cy="10" r=".9" class="fill"/><circle cx="10" cy="10" r=".9" class="fill"/><circle cx="13.2" cy="10" r=".9" class="fill"/></svg>
+  </button>
+  <div id="find" role="search">
+    <svg viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="5"/><path d="m12.3 12.3 4.2 4.2"/></svg>
+    <input id="find-input" type="search" placeholder="Find in Document" spellcheck="false" autocomplete="off" aria-label="Find in Document">
+    <span id="find-count"></span>
+    <button id="find-prev" title="Previous match" aria-label="Previous match"><svg viewBox="0 0 20 20"><path d="m6 12 4-4 4 4"/></svg></button>
+    <button id="find-next" title="Next match" aria-label="Next match"><svg viewBox="0 0 20 20"><path d="m6 8 4 4 4-4"/></svg></button>
+  </div>
+</header>
+
+<nav id="tabs" hidden>
+  <div id="tab-list" role="tablist"></div>
+  <button id="tab-add" title="Open in New Tab" aria-label="Open in New Tab"><svg viewBox="0 0 20 20"><path d="M10 5v10M5 10h10"/></svg></button>
+</nav>
+
+<div id="body">
+  <aside id="sidebar">
+    <div id="outline-head">Contents</div>
+    <div id="outline" role="tree"></div>
+    <div id="outline-empty" hidden>
+      <svg viewBox="0 0 20 20"><path d="M4 5h1M8 5h8M6 10h1M10 10h6M6 15h1M10 15h6"/></svg>
+      <strong>No Outline</strong>
+      <span id="outline-empty-text">Headings in this document will appear here.</span>
+    </div>
+    <footer id="file-info" hidden>
+      <svg viewBox="0 0 20 20" id="file-icon"><path d="M5 2.5h6.5L15 6v11.5H5z"/><path d="M11.5 2.5V6H15"/></svg>
+      <div>
+        <div id="file-name"></div>
+        <div id="file-dir"><bdi id="file-dir-text"></bdi></div>
+      </div>
+    </footer>
+    <div id="sidebar-resizer" title="Drag to resize"></div>
+  </aside>
+
+  <section id="reader" data-theme="auto">
+    <div id="progress"></div>
+    <div id="welcome">
+      <img src="icon.png" alt="" width="96" height="96">
+      <h1>MDReader</h1>
+      <p>Open a Markdown file or an EPUB book to read it.</p>
+      <button id="welcome-open">Open…</button>
+      <p class="hint">or drop files onto this window</p>
+    </div>
+  </section>
+</div>
+
+<div id="menu-layer" hidden></div>
+
+<script src="js/themes.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

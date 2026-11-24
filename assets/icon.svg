@@ -1,5 +1,5 @@
-<!-- MDReader app icon (source for the app's AppIcon.icns; build.sh renders it via
-     scripts/make-icon.swift). A Markdown "#" beside the page it typesets: a bright
+<!-- MDReader app icon (source for src-tauri/icons; `npm run icons` renders it via
+     scripts/icons.mjs as a borderless glyph: no tile, cropped to fill the icon). A Markdown "#" beside the page it typesets: a bright
      title, a lit subheading, paragraph lines, then two bulleted list items. Matches the
      DataWorx/NovaMail/Secrets/FlexFTP/Runner icon family: dark body, soft glow,
      gradient glyph, hairline edge. Drawn on Apple's macOS icon grid: an 824×824

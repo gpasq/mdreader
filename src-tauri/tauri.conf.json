@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MDReader",
+  "version": "1.0.0",
+  "identifier": "net.pasq.mdreader",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "MDReader",
+        "width": 1080,
+        "height": 780,
+        "minWidth": 560,
+        "minHeight": 420,
+        "center": true,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "* data: blob: doc: http://doc.localhost",
+        "media-src": "* data: blob: doc: http://doc.localhost",
+        "font-src": "'self' data: doc: http://doc.localhost",
+        "connect-src": "ipc: http://ipc.localhost",
+        "object-src": "'none'",
+        "frame-src": "'none'"
+      },
+      "dangerousDisableAssetCspModification": ["style-src"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "A quiet reader for Markdown files and EPUB books",
+    "longDescription": "Open any Markdown file or EPUB book and it is typeset for reading, with an outline sidebar, live reload, syntax-highlighted code, Mermaid diagrams and light, sepia and dark themes.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
