@@ -1,4 +1,4 @@
-//! MDReader: a quiet reader for Markdown files and EPUB books.
+//! MDReader: a quiet reader for Markdown files, EPUB books and PDFs.
 //!
 //! The window hosts a single page (`src/index.html`) that renders documents and draws all
 //! of the app's chrome. This side opens files, unpacks books, watches for changes, serves
@@ -85,6 +85,16 @@ async fn open_document(path: String) -> Result<docs::Document, String> {
         .map_err(|e| e.to_string())?
 }
 
+/// A PDF's bytes for pdf.js, sent as a raw binary reply (an ArrayBuffer on the page) rather
+/// than JSON. A command keeps the page's CSP closed to `doc:` fetches.
+#[tauri::command]
+async fn read_pdf(path: String) -> Result<tauri::ipc::Response, String> {
+    tauri::async_runtime::spawn_blocking(move || docs::read_pdf(Path::new(&path)))
+        .await
+        .map_err(|e| e.to_string())?
+        .map(tauri::ipc::Response::new)
+}
+
 #[tauri::command]
 fn close_book(book_id: String) {
     epub::discard(&book_id);
@@ -125,13 +135,14 @@ fn read_text(path: String) -> Result<String, String> {
 #[tauri::command]
 async fn pick_documents<R: Runtime>(app: AppHandle<R>) -> Vec<String> {
     let mut all: Vec<&str> = docs::MARKDOWN_EXTENSIONS.to_vec();
-    all.extend(["txt", "text", "epub"]);
+    all.extend(["txt", "text", "epub", "pdf"]);
     app.dialog()
         .file()
         .set_title("Open")
-        .add_filter("Markdown and EPUB", &all)
+        .add_filter("Markdown, EPUB and PDF", &all)
         .add_filter("Markdown", docs::MARKDOWN_EXTENSIONS)
         .add_filter("EPUB Books", &["epub"])
+        .add_filter("PDF Documents", &["pdf"])
         .add_filter("All Files", &["*"])
         .blocking_pick_files()
         .unwrap_or_default()
@@ -243,6 +254,7 @@ pub fn run() {
             take_launch_files,
             app_info,
             open_document,
+            read_pdf,
             close_book,
             watch_file,
             unwatch_file,

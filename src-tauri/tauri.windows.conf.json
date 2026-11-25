@@ -16,6 +16,13 @@
         "description": "EPUB Book",
         "mimeType": "application/epub+zip",
         "role": "Viewer"
+      },
+      {
+        "ext": ["pdf"],
+        "name": "PDF Document",
+        "description": "PDF Document",
+        "mimeType": "application/pdf",
+        "role": "Viewer"
       }
     ],
     "windows": {

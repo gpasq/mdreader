@@ -327,6 +327,56 @@
 .markdown .chapter img { border-radius: 0; }
 .empty { text-align: center; color: var(--muted); margin-top: 30vh; font-family: var(--display-font); }
 
+/* PDFs: white pages on a backdrop a shade off the reading pane, so they sit well in any theme.
+   js/pdf.js sizes each page, and they scroll sideways when zoomed wider than the window. */
+#reader .doc.pdf { overflow-x: auto; background: color-mix(in srgb, var(--fg) 7%, var(--bg)); }
+.pdf-pages {
+  width: max-content; min-width: 100%; padding: 24px 24px 96px;
+  --scale-round-x: 1px; --scale-round-y: 1px;
+}
+.pdf-page {
+  position: relative; margin: 0 auto 16px; overflow: hidden;
+  background: #fff; box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--fg) 10%, transparent);
+}
+.pdf-page canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* A dark pane dims the paper a little rather than inverting the document's colors. */
+#reader[data-theme="dark"] .pdf-page, #reader[data-dark] .pdf-page { filter: brightness(.9); }
+@media (prefers-color-scheme: dark) { #reader[data-theme="auto"] .pdf-page { filter: brightness(.9); } }
+
+/* pdf.js's text layer (from its pdf_viewer.css): transparent runs laid over the picture. */
+.pdf-page .textLayer {
+  position: absolute; inset: 0; overflow: clip; opacity: 1; line-height: 1; text-align: initial;
+  letter-spacing: normal; word-spacing: normal; text-size-adjust: none; -webkit-text-size-adjust: none;
+  forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText; z-index: 0;
+  color-scheme: only light; user-select: text; -webkit-user-select: text;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.pdf-page .textLayer :is(span, br) {
+  color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%;
+}
+.pdf-page .textLayer > :not(.markedContent), .pdf-page .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.pdf-page .textLayer .markedContent { display: contents; }
+.pdf-page .textLayer ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); color: transparent; }
+.pdf-page .textLayer br::selection { background: transparent; }
+/* The page's own text is drawn underneath, so the current match must let it show through. */
+.pdf-page .textLayer span::highlight(mdr-find-current) { color: transparent; background-color: color-mix(in srgb, #ff9f0a 55%, transparent); }
+.pdf-page .textLayer[data-main-rotation="90"] { transform: rotate(90deg) translateY(-100%); }
+.pdf-page .textLayer[data-main-rotation="180"] { transform: rotate(180deg) translate(-100%, -100%); }
+.pdf-page .textLayer[data-main-rotation="270"] { transform: rotate(270deg) translateX(-100%); }
+
+.pdf-links { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.pdf-links a { position: absolute; pointer-events: auto; cursor: pointer; border-radius: 2px; }
+.pdf-links a:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
 /* Dark pages print as light ones: printers don't print page backgrounds. */
 @media print {
   #reader[data-theme="dark"], #reader[data-theme="custom"][data-dark] {

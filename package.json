@@ -2,7 +2,7 @@
   "name": "mdreader",
   "private": true,
   "version": "1.0.0",
-  "description": "A quiet reader for Markdown files and EPUB books.",
+  "description": "A quiet reader for Markdown files, EPUB books and PDFs.",
   "scripts": {
     "tauri": "tauri",
     "app": "node scripts/run-app.mjs",
